@@ -15,15 +15,24 @@ jobs:
         with:
           node-version: '14'
 
-     # - name: Install dependencies
-       # run: npm install
+      - name: Install dependencies
+        run: npm install
         # Optional: specify the working directory if `package.json` is in a subdirectory
         # working-directory: path/to/your/subdirectory
 
-    #  - name: Build the project
-      #  run: npm run build
+      - name: Build the project
+        run: npm run build
         # Optional: specify the working directory if `package.json` is in a subdirectory
         # working-directory: path/to/your/subdirectory
+
+      - name: Notify Slack on Build Failure
+        if: failure()  # Runs only if the previous steps fail
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "text": "Build failed in *GitHub Actions* for the branch `${{ github.ref }}`. Check the details here: ${{ github.run_url }}"
+          }' $SLACK_WEBHOOK_URL
 
   test:
     name: Test Application
@@ -38,15 +47,24 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      #- name: Install dependencies
-       # run: npm install
-        # Optional: specify the working directory if `package.json` is in a subdirectory
-        # working-directory: path/to/your/subdirectory
+      - name: Install dependencies (for .NET)
+        run: dotnet restore
+        # Optional: specify the working directory if the .NET project is in a subdirectory
+        # working-directory: path/to/your/dotnet/project
 
-      #- name: Run tests
-       # run: npm test
-        # Optional: specify the working directory if `package.json` is in a subdirectory
-        # working-directory: path/to/your/subdirectory
+      - name: Run tests
+        run: dotnet test
+        # Optional: specify the working directory if the .NET project is in a subdirectory
+        # working-directory: path/to/your/dotnet/project
+
+      - name: Notify Slack on Test Failure
+        if: failure()  # Runs only if the previous steps fail
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "text": "Test failed in *GitHub Actions* for the branch `${{ github.ref }}`. Check the details here: ${{ github.run_url }}"
+          }' $SLACK_WEBHOOK_URL
 
   deploy:
     name: Deploy Application
@@ -62,3 +80,12 @@ jobs:
         run: |
           echo "Deploying to ${DEPLOY_ENV}"
           # Add deployment steps here, e.g., scp or deployment script
+
+      - name: Notify Slack on Deployment Failure
+        if: failure()  # Runs only if the previous steps fail
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "text": "Deployment failed in *GitHub Actions* for the branch `${{ github.ref }}`. Check the details here: ${{ github.run_url }}"
+          }' $SLACK_WEBHOOK_URL
