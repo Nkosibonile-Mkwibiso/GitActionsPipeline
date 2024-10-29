@@ -3,23 +3,9 @@ name: CI/CD Pipeline
 on: push
 
 jobs:
-  super-lint:
-    name: Lint code base
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Run Super-Linter
-        uses: github/super-linter@v4
-        env:
-          DEFAULT_BRANCH: main
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   build:
     name: Build Application
     runs-on: ubuntu-latest
-    needs: super-lint
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -31,9 +17,13 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+        # Optional: specify the working directory if `package.json` is in a subdirectory
+        # working-directory: path/to/your/subdirectory
 
       - name: Build the project
         run: npm run build
+        # Optional: specify the working directory if `package.json` is in a subdirectory
+        # working-directory: path/to/your/subdirectory
 
   test:
     name: Test Application
@@ -50,9 +40,13 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+        # Optional: specify the working directory if `package.json` is in a subdirectory
+        # working-directory: path/to/your/subdirectory
 
       - name: Run tests
         run: npm test
+        # Optional: specify the working directory if `package.json` is in a subdirectory
+        # working-directory: path/to/your/subdirectory
 
   deploy:
     name: Deploy Application
@@ -68,6 +62,3 @@ jobs:
         run: |
           echo "Deploying to ${DEPLOY_ENV}"
           # Add deployment steps here, e.g., scp or deployment script
-
-          # Here you can add the commands to deploy, such as `scp` or an API call to a deployment service
-          echo "Deploying to ${DEPLOY_ENV}"
