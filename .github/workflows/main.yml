@@ -1,91 +1,37 @@
-name: CI/CD Pipeline
+name: .NET CI
 
-on: push
+# Trigger the workflow on push or pull request events
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
-    name: Build Application
     runs-on: ubuntu-latest
+
     steps:
+      # Check out the code from your repository
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v1
+      # Set up .NET environment
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '8.0' 
 
-     # - name: Install dependencies
-      #  run: npm install
-        # Optional: specify the working directory if `package.json` is in a subdirectory
-        # working-directory: path/to/your/subdirectory
-
-     # - name: Build the project
-      #  run: npm run build
-        # Optional: specify the working directory if `package.json` is in a subdirectory
-        # working-directory: path/to/your/subdirectory
-
-      - name: Notify Slack on Build Failure
-        if: failure()  # Runs only if the previous steps fail
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: |
-          curl -X POST -H 'Content-type: application/json' --data '{
-            "text": "Build failed in *GitHub Actions* for the branch `${{ github.ref }}`. Check the details here: ${{ github.run_url }}"
-          }' $SLACK_WEBHOOK_URL
-
-  test:
-    name: Test Application
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Install dependencies (for .NET)
+      # Restore dependencies
+      - name: Restore dependencies
         run: dotnet restore
-        # Optional: specify the working directory if the .NET project is in a subdirectory
-        # working-directory: path/to/your/dotnet/project
 
-     # - name: Run tests
-      #  run: dotnet test
-        # Optional: specify the working directory if the .NET project is in a subdirectory
-        # working-directory: path/to/your/dotnet/project
+      # Build the solution
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
 
-      - name: Notify Slack on Test Failure
-        if: failure()  # Runs only if the previous steps fail
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: |
-          curl -X POST -H 'Content-type: application/json' --data '{
-            "text": "Test failed in *GitHub Actions* for the branch `${{ github.ref }}`. Check the details here: ${{ github.run_url }}"
-          }' $SLACK_WEBHOOK_URL
-
-  deploy:
-    name: Deploy Application
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Deploy to Environment
-        env:
-          DEPLOY_ENV: production
-        run: |
-          echo "Deploying to ${DEPLOY_ENV}"
-          # Add deployment steps here, e.g., scp or deployment script
-
-      - name: Notify Slack on Deployment Failure
-        if: failure()  # Runs only if the previous steps fail
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: |
-          curl -X POST -H 'Content-type: application/json' --data '{
-            "text": "Deployment failed in *GitHub Actions* for the branch `${{ github.ref }}`. Check the details here: ${{ github.run_url }}"
-          }' $SLACK_WEBHOOK_URL
+      # Run tests
+      - name: Test
+        run: dotnet test --no-build --verbosity normal
